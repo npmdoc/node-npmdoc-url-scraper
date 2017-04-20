@@ -1,0 +1,197 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/krishcdbry/url-scraper#readme">url-scraper (v1.0.2)</a>
+</h1>
+<h4>Url scraper which takes the text input and finds the links/urls, scraps them using cheerio and will returns an object with original text, parsed text (using npm-text-parser) and array of objects where each object contains scraped webpage's information.</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.url-scraper">module url-scraper</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.url-scraper.scrap">
+            function <span class="apidocSignatureSpan">url-scraper.</span>scrap
+            <span class="apidocSignatureSpan">(data)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.url-scraper" id="apidoc.module.url-scraper">module url-scraper</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.url-scraper.scrap" id="apidoc.element.url-scraper.scrap">
+        function <span class="apidocSignatureSpan">url-scraper.</span>scrap
+        <span class="apidocSignatureSpan">(data)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function urlScrap(data) {
+
+	var urls = parser.getUrls(data);
+
+	return new Promise(function(resolve, reject) {
+
+		if (urls &amp;&amp; urls.length &gt; 0) {
+
+			var finalRes = {};
+			var scrapRes = [];
+
+			var sendData = function() {
+				finalRes['original_text'] = data;
+				finalRes['parsed_text'] = parser.parseUrl(data);
+				finalRes['scraped_data'] = scrapRes;
+				resolve(finalRes);
+			};
+
+			var getUrlData = function(url, callback) {
+				url = (url.indexOf('://') &gt; 0) ? url : 'http://' + url;
+
+				var domain = (url.indexOf("://") &gt; 0) ? url.split("://")[1] : url;
+				domain = (domain.indexOf('/') &gt; 0) ? domain.split('/')[0] : domain;
+
+				var _self = url;
+
+				request(url, function(err, res2, html) {
+					if (err) {
+						callback({'error': "Error getting url data"});
+					}
+					var $ = cheerio.load(html);
+					if ($) {
+						var title = $('title').html() ? $('title').html() : '';
+						var description = $('meta[name=description]') ? $('meta[name=description]').attr('content') : '';
+						var thumb = null;
+						if ($('meta[property="og:image"]')) {
+							thumb = $('meta[property="og:image"]').attr('content')
+						}
+						else {
+							if ($('link[rel="shortcut icon"]')) {
+								thumb = $('link[rel="shortcut icon"]').attr('href')
+							}
+						}
+						var canonical = $('link[rel=canonical]') ? $('link[rel=canonical]').attr('href') : '';
+
+						var scrapObj = {
+							"domain": domain
+							, "title": (title != undefined) ? title : ''
+							, "description": (description != undefined) ? description : ''
+							, "thumb": (thumb != undefined) ? thumb : ''
+							, "canonical": (canonical != undefined) ? canonical : ''
+							, "isValid": true
+							, "_links": {
+								"self": _self
+							}
+						};
+						callback(scrapObj);
+					}
+					else {
+						callback(null);
+					}
+				});
+			};
+
+			var gettingData = function(url) {
+				if (url) {
+					getUrlData(url, function(result) {
+						if (result) {
+							scrapRes.push(result);
+						}
+						return gettingData(urls.pop());
+					})
+				}
+				else {
+					return sendData();
+				}
+			};
+
+			gettingData(urls.pop());
+		}
+		else {
+			reject({});
+		}
+
+	})
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+Receives the input text and finds the links/url, scraps them and returns an object with original, parsed and array of scrapped websites
+ info.
+```javascript
+
+ var inputString = "This is awesome it parses the url's dude and http://krishcdbry.com done !"
+	
+ urlScraper
+ 		.<span class="apidocCodeKeywordSpan">scrap</span>(inputString)
+ 		.then(function(response) {
+   			console.log(response); // It returns the response object when promise gets resolved satisfies.
+ 		});	
+
+ //{
+ // original_text: 'This is awesome it scraps the sites dude and http://heartynote.com done !',
+ // parsed_text: 'This is awesome it scraps the sites dude and &lt;a href="http://heartynote.com" target="
+_blank"&gt;http://heartynote.com&lt;/a&gt; done !',
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
